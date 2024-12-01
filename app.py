@@ -98,7 +98,7 @@ def index():
 
 def process_image(img):
     """
-    Process image and predict label using TensorFlow Lite.
+    Prcess image and predict label using TensorFlow Lite.
     """
     image_array = img_to_array(img)
     image_array = np.expand_dims(image_array, axis=-1) 
