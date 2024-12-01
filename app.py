@@ -6,7 +6,7 @@ import numpy as np
 import io
 
 app = Flask(__name__)
-model = load_model('apps/model/deteksi_wajah3.h5')#model nya
+model = load_model('model/deteksi_wajah3.h5')#model nya
 #lebel nya
 label_map_r = {
     0: 'Kemarahan',
