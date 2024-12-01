@@ -1,13 +1,15 @@
 from flask import Flask, request, render_template
-from tensorflow.keras.models import load_model
+import tflite_runtime.interpreter as tflite
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import random
 import numpy as np
 import io
 
 app = Flask(__name__)
-model = load_model('apps/model/deteksi_wajah3.h5')#model nya
-#lebel nya
+interpreter = tflite.Interpreter(model_path='model/deteksi_wajah3.tflite')
+interpreter.allocate_tensors()
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 label_map_r = {
     0: 'Kemarahan',
     1: 'Jijik',
@@ -17,7 +19,6 @@ label_map_r = {
     5: 'Kesedihan',
     6: 'Kejutan'
 }
-#Pesan saya bikin random
 messages = {
     "Kemarahan": [
         "Tenangkan hati, semuanya terkendali.",
@@ -83,7 +84,7 @@ def index():
                 result = "No selected file"
             elif file and file.filename.lower().endswith(('png', 'jpg', 'jpeg')):
                 try:
-                    #graysacle Processing dan prediksi
+                    # Grayscale processing and prediction
                     img_bytes = io.BytesIO(file.read())
                     img = load_img(img_bytes, target_size=(48, 48), color_mode="grayscale")
                     predicted_label, motivational_message = process_image(img)
@@ -97,15 +98,22 @@ def index():
 
 def process_image(img):
     """
-    Proses gambar dan prediksi label menggunakan model TensorFlow.
+    Process image and predict label using TensorFlow Lite.
     """
     image_array = img_to_array(img)
     image_array = np.expand_dims(image_array, axis=-1) 
     image_array = np.expand_dims(image_array, axis=0)
     image_array = image_array / 255.0
-    prediction = model.predict(image_array)
-    predicted_class = np.argmax(prediction)
+
+    interpreter.set_tensor(input_details[0]['index'], image_array.astype(np.float32))
+
+    interpreter.invoke()
+
+    # Get prediction result
+    output_data = interpreter.get_tensor(output_details[0]['index'])
+    predicted_class = np.argmax(output_data)
     predicted_label = label_map_r[predicted_class]
+
     motivational_message = random.choice(messages[predicted_label])
     return predicted_label, motivational_message
 
