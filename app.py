@@ -1,15 +1,12 @@
 from flask import Flask, request, render_template
-import tflite.interpreter as tflite
+from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import random
 import numpy as np
 import io
 
 app = Flask(__name__)
-interpreter = tflite.Interpreter(model_path='model/deteksi_wajah3.tflite')
-interpreter.allocate_tensors()
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
+model = load_model('model/deteksi_wajah3.h5') 
 label_map_r = {
     0: 'Kemarahan',
     1: 'Jijik',
@@ -70,7 +67,6 @@ messages = {
         "Kejutan adalah awal dari petualangan."
     ]
 }
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     result = None
@@ -84,7 +80,6 @@ def index():
                 result = "No selected file"
             elif file and file.filename.lower().endswith(('png', 'jpg', 'jpeg')):
                 try:
-                    # Grayscale processing and prediction
                     img_bytes = io.BytesIO(file.read())
                     img = load_img(img_bytes, target_size=(48, 48), color_mode="grayscale")
                     predicted_label, motivational_message = process_image(img)
@@ -95,22 +90,15 @@ def index():
                 result = "Invalid file format. Only PNG, JPG allowed."
     
     return render_template('index.html', result=result, motivational_message=motivational_message)
-
 def process_image(img):
     """
-    Prcess image and predict label using TensorFlow Lite.
+    Process image and predict label using TensorFlow .h5 model.
     """
     image_array = img_to_array(img)
-    image_array = np.expand_dims(image_array, axis=-1) 
-    image_array = np.expand_dims(image_array, axis=0)
+    image_array = np.expand_dims(image_array, axis=-1)
+    image_array = np.expand_dims(image_array, axis=0) 
     image_array = image_array / 255.0
-
-    interpreter.set_tensor(input_details[0]['index'], image_array.astype(np.float32))
-
-    interpreter.invoke()
-
-    # Get prediction result
-    output_data = interpreter.get_tensor(output_details[0]['index'])
+    output_data = model.predict(image_array)
     predicted_class = np.argmax(output_data)
     predicted_label = label_map_r[predicted_class]
 
