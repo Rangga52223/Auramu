@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template
-import tflite_runtime.interpreter as tflite
+import tflite.interpreter as tflite
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import random
 import numpy as np
